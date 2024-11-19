@@ -6,4 +6,26 @@
 
 from biblioteca import *
 
-main()
+def main():
+    print("Bem vindo à SkyZero!")
+
+    looping = True
+    usuario = telaLogin()
+    
+    while looping:    
+        
+        if usuario != False:
+            print("\nMENU PRINCIPAL!")
+            print("\nDESENVOLVIMENTO!")
+
+        looping = opcaoSaida()
+
+    
+if __name__ == "__main__":
+    main()
+
+caminho = 'credenciais.json'   
+excluiCredenciais(caminho)
+
+print("\nFim do programa, volte sempre!\n")
+#SKYZERO @2024
