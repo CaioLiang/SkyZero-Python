@@ -56,6 +56,13 @@ def validaCnpj(cnpj):
             print("\nCNPJ inválido. Por favor, insira um CNPJ com 14 dígitos.")
             cnpj = input("\nPor favor, insira o CNPJ da empresa: ")
 
+def validaSenha(senha):
+    while True:
+        if len(senha) >= 8:
+            return senha
+        print("\nSenha fraca! Mínimo de 8 caracteres\n")
+        senha = input("Cadastre a senha do seu Login: ")
+    
 #SISTEMA
 
 def opcaoSaida(): 
@@ -123,22 +130,87 @@ def menuCadastro():
     email = validaEmail(email)
     cnpj = input("\nPor favor, insira o CNPJ da empresa: ")
     cnpj = validaCnpj(cnpj)
-        
+   
+    print("\n---INFO---")
+    print("\nSeu LOGIN será do seguinte formato: \n"
+          "Usuário: CNPJ\n"
+          "Senha: SENHA\n")
+    senha = input("\nCadastre a SENHA do seu login: ")
+    senha = validaSenha(senha)
     usuario = {
         'nomeEmpresa' : nomeEmpresa,
         'email' : email,
-        'cnpj' : cnpj
+        'cnpj' : cnpj,
+        'login' : 
+            {
+            'senha' : senha
+            }
     }
     
+    print("\n-----------------CADASTRANDO USUÁRIO NO BANCO DE DADOS-----------------")
     query_script = f"INSERT INTO tb_usuario (NOMEEMPRESA, EMAIL, CNPJ) VALUES ('{usuario['nomeEmpresa']}', '{usuario['email']}', '{usuario['cnpj']}')"
+    comandoConexaoBD(query_script)
+    
+    query_script = f"SELECT id_usuario FROM tb_usuario WHERE cnpj = {cnpj}"
+    id_usuario_bruto = comandoConexaoBD(query_script)
+    
+    for id in id_usuario_bruto: 
+        id_usuario_login = id[0]
+        
+    print("\n-----------------CADASTRANDO LOGIN NO BANCO DE DADOS-----------------")
+    query_script = f"INSERT INTO tb_login (ID_USUARIO, LOGIN, SENHA) VALUES ({id_usuario_login}, '{usuario['cnpj']}', '{usuario['login']['senha']}')"
     comandoConexaoBD(query_script)
     
     return usuario
     
 def realizarLogin():
-    print("OI")
-    usuario = {'caio':'12345'}
-    return usuario
+    
+    print("\n=== LOGIN ===\n" )
+    
+    login_usuario = input("\nDigite seu CPNJ: \n")
+    login_usuario = validaCnpj(login_usuario)
+    login_senha = input("\nDigite a sua senha: \n")
+    login_senha = validaSenha(login_senha)
+    
+    validador_login = False
+    lista_cnpj_cadastrados = [] 
+    query_script = 'SELECT login FROM tb_login'
+    cnpj_brutos = comandoConexaoBD(query_script)
+
+    #Validar com TRY - Caso venha vazio a consulta
+    #if len(cnpj_brutos)
+    
+    for item_cnpj in cnpj_brutos:
+        lista_cnpj_cadastrados.append(item_cnpj[0])        
+    
+    
+    #validar senha do usuario
+    # senha
+    
+    if (login_usuario in lista_cnpj_cadastrados) and login_senha == senha:
+        validador_login = True
+    
+    if validador_login:
+        #CONSULTA DAS INFORMAÇÔES DOS USUARIOS
+        usuario = {
+            'nomeEmpresa' : nomeEmpresa,
+            'email' : email,
+            'cnpj' : cnpj,
+            'login' : 
+                {
+                'senha' : senha
+                }
+        }
+        
+        return usuario
+        
+    decisao_cadastro = input(
+            "\n--- DESEJA CADASTRAR ---\n" 
+                "1 - Sim\n"
+                "2 - Não\n")        
+    
+    if decisao_cadastro == 1:
+        return menuCadastro()
 
 #<conexão com banco de dados>
 def comandoConexaoBD(query_script):
@@ -154,15 +226,15 @@ def comandoConexaoBD(query_script):
             if query_script.strip().upper().startswith('SELECT'):
                 resultados = cursor.fetchall()
                 
-                if resultados:
-                    print("\nConsulta retornou resultados.")
-                else:
-                    print("\nConsulta não retornou resultados.")
+                # if resultados:
+                #     print("\nConsulta retornou resultados.")
+                # else:
+                #     print("\nConsulta não retornou resultados.")
                 
-                print("Comando executado com sucesso!\n")
+                # print("Comando executado com sucesso!\n")
                 return resultados
             
-            print("Comando executado com sucesso!\n")
+            # print("Comando executado com sucesso!\n")
             break
         except Exception as e: 
             print("\nERRO DE CREDENCIAIS\n")

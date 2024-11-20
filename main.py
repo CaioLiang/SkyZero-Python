@@ -1,4 +1,4 @@
-#GS - SkyZero
+# GS - SkyZero
 # Integrantes:
 # Allan Brito Moreira - RM558948
 # Caio Liang - RM558868
@@ -7,7 +7,7 @@
 from biblioteca import *
 
 def main():
-    print("Bem vindo à SkyZero!")
+    print("\nBem vindo à SkyZero!")
 
     looping = True
     usuario = telaLogin()
@@ -19,7 +19,6 @@ def main():
             print("\nDESENVOLVIMENTO!")
 
         looping = opcaoSaida()
-
     
 if __name__ == "__main__":
     main()
