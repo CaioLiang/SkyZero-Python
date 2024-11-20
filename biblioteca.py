@@ -63,6 +63,22 @@ def validaSenha(senha):
         print("\nSenha fraca! Mínimo de 8 caracteres\n")
         senha = input("Cadastre a senha do seu Login: ")
     
+def tratarDadosBrutos(dados_brutos):
+    lista_tratada = []
+    for item in dados_brutos:
+        lista_tratada.append(item[0]) 
+    
+    return lista_tratada        
+            
+def entradaCnpj(cnpj):
+    pattern = r'^\d{14}$'
+    while True:
+        if re.match(pattern, cnpj):         
+            return cnpj 
+
+        print("\nCNPJ inválido. Por favor, insira um CNPJ com 14 dígitos.")
+        cnpj = input("\nPor favor, insira o CNPJ da empresa: ")
+        
 #SISTEMA
 
 def opcaoSaida(): 
@@ -120,9 +136,7 @@ def telaLogin():
             
 def menuCadastro():
     
-    print("\n=== MENU CADASTRO ===\n")
-    
-    credenciaisJson()
+    print("\n=== MENU CADASTRO ===")
     
     nomeEmpresa = input("\nPor favor, insira o nome da empresa: ")
     nomeEmpresa = validaNomeEmpresa(nomeEmpresa)
@@ -165,52 +179,68 @@ def menuCadastro():
     
 def realizarLogin():
     
-    print("\n=== LOGIN ===\n" )
-    
-    login_usuario = input("\nDigite seu CPNJ: \n")
-    login_usuario = validaCnpj(login_usuario)
-    login_senha = input("\nDigite a sua senha: \n")
-    login_senha = validaSenha(login_senha)
-    
-    validador_login = False
-    lista_cnpj_cadastrados = [] 
-    query_script = 'SELECT login FROM tb_login'
-    cnpj_brutos = comandoConexaoBD(query_script)
+    while True:
+        print("\n=== LOGIN ===" )
+        
+        login_usuario = input("Digite seu CPNJ: ")
+        login_usuario = entradaCnpj(login_usuario)
+        
+        login_senha = input(f"Digite a sua senha do seu usuário: ")
+        login_senha = validaSenha(login_senha)
+        
+        validador_login = False
+        
+        query_script = 'SELECT login FROM tb_login'
+        cnpj_brutos = comandoConexaoBD(query_script)
+        cnpj_brutos = tratarDadosBrutos(cnpj_brutos)     
+        
+        tipo_erro =  "Usuário não registrado!" 
+        
+        if login_usuario in cnpj_brutos:
+            query_script = f"SELECT senha FROM tb_login WHERE login = '{login_usuario}'"
+            senha_brutos = comandoConexaoBD(query_script)
+            senha_brutos = tratarDadosBrutos(senha_brutos)
+            
+            tipo_erro =  "Senha inválida!" 
+            
+            if login_senha in senha_brutos:
+                validador_login = True
+            
+            if validador_login:
 
-    #Validar com TRY - Caso venha vazio a consulta
-    #if len(cnpj_brutos)
-    
-    for item_cnpj in cnpj_brutos:
-        lista_cnpj_cadastrados.append(item_cnpj[0])        
-    
-    
-    #validar senha do usuario
-    # senha
-    
-    if (login_usuario in lista_cnpj_cadastrados) and login_senha == senha:
-        validador_login = True
-    
-    if validador_login:
-        #CONSULTA DAS INFORMAÇÔES DOS USUARIOS
-        usuario = {
-            'nomeEmpresa' : nomeEmpresa,
-            'email' : email,
-            'cnpj' : cnpj,
-            'login' : 
-                {
-                'senha' : senha
+                query_script = f"SELECT NOMEEMPRESA FROM tb_usuario WHERE cnpj = '{login_usuario}'"
+                nome_empresa_brutos = comandoConexaoBD(query_script)
+                
+                nome_empresa_brutos = tratarDadosBrutos(nome_empresa_brutos)
+                nomeEmpresa = nome_empresa_brutos[0]
+                
+                query_script = f"SELECT email FROM tb_usuario WHERE cnpj = '{login_usuario}'"
+                email_brutos = comandoConexaoBD(query_script)
+                
+                email_brutos = tratarDadosBrutos(email_brutos)
+                email = email_brutos[0]
+                
+                usuario = {
+                    'nomeEmpresa' : nomeEmpresa,
+                    'email' : email,
+                    'cnpj' : login_usuario,
+                    'login' : 
+                        {
+                        'senha' : login_senha
+                        }
                 }
-        }
+                
+                return usuario
+            
+        decisao_cadastro = input(
+                f"\n--- {tipo_erro} ---\n"
+                "\n--- DESEJA CADASTRAR ---\n" 
+                    "1 - Sim\n"
+                    "2 - Não\n"
+                    "\nDigite uma das opções: ")        
         
-        return usuario
-        
-    decisao_cadastro = input(
-            "\n--- DESEJA CADASTRAR ---\n" 
-                "1 - Sim\n"
-                "2 - Não\n")        
-    
-    if decisao_cadastro == 1:
-        return menuCadastro()
+        if decisao_cadastro == '1':
+            return menuCadastro()
 
 #<conexão com banco de dados>
 def comandoConexaoBD(query_script):
