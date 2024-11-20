@@ -18,7 +18,20 @@ def validaEmail(email):
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     while True:
         if re.match(pattern, email):
-            return email
+            
+            lista_email_cadastrados = [] 
+            query_script = 'SELECT email FROM tb_usuario'
+            email_brutos = comandoConexaoBD(query_script)
+            
+            for item_email in email_brutos:
+                lista_email_cadastrados.append(item_email[0])        
+            
+            if email not in lista_email_cadastrados:
+                return email 
+            
+            print(f"\EMAIL '{email}' JÁ CADASTRADO!")
+            email = input("\nDigite outro Email: ")
+
         else:
             print("\nEmail inválido. Por favor, insira um email válido.")
             email = input("\nPor favor, insira o email de contato: ")
@@ -27,7 +40,18 @@ def validaCnpj(cnpj):
     pattern = r'^\d{14}$'
     while True:
         if re.match(pattern, cnpj):
-            return cnpj
+            lista_cnpj_cadastrados = [] 
+            query_script = 'SELECT cnpj FROM tb_usuario'
+            cnpj_brutos = comandoConexaoBD(query_script)
+            
+            for item_cnpj in cnpj_brutos:
+                lista_cnpj_cadastrados.append(item_cnpj[0])        
+            
+            if cnpj not in lista_cnpj_cadastrados:
+                return cnpj 
+            
+            print(f"\nCNPJ -{cnpj}- JÁ CADASTRADO!")
+            cnpj = input("\nDigite outro CNPJ: ")
         else:
             print("\nCNPJ inválido. Por favor, insira um CNPJ com 14 dígitos.")
             cnpj = input("\nPor favor, insira o CNPJ da empresa: ")
@@ -63,12 +87,11 @@ def telaLogin():
         print(
                 "\n=== MENU LOGIN ===\n"
                 "1 - Login\n"
-                "2 - Cadastrar Usuário\n"
-                "3 - Sair\n"
-                "\nDigite o número da sua escolha: "
+                "2 - Cadastrar usuário\n"
+                "3 - Sair"
             )
         
-        escolha = input().strip()
+        escolha = input("\nDigite o número da sua escolha: ").strip()
             
         try:
             escolha = int(escolha)
@@ -85,6 +108,8 @@ def telaLogin():
                 return False
             case _:
                 print("Opção inválida. Por favor, escolha uma opção válida.")
+
+#<submenus>
             
 def menuCadastro():
     
@@ -105,9 +130,11 @@ def menuCadastro():
         'cnpj' : cnpj
     }
     
+    query_script = f"INSERT INTO tb_usuario (NOMEEMPRESA, EMAIL, CNPJ) VALUES ('{usuario['nomeEmpresa']}', '{usuario['email']}', '{usuario['cnpj']}')"
+    comandoConexaoBD(query_script)
+    
     return usuario
     
-
 def realizarLogin():
     print("OI")
     usuario = {'caio':'12345'}
@@ -128,14 +155,14 @@ def comandoConexaoBD(query_script):
                 resultados = cursor.fetchall()
                 
                 if resultados:
-                    print("Consulta retornou resultados.")
+                    print("\nConsulta retornou resultados.")
                 else:
-                    print("Consulta não retornou resultados.")
+                    print("\nConsulta não retornou resultados.")
                 
-                print("Comando executado com sucesso!")
+                print("Comando executado com sucesso!\n")
                 return resultados
             
-            print("Comando executado com sucesso!")
+            print("Comando executado com sucesso!\n")
             break
         except Exception as e: 
             print("\nERRO DE CREDENCIAIS\n")
