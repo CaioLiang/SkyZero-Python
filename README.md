@@ -45,8 +45,8 @@ Acesse o front-end do projeto em: [SkyZero](https://fiap-gs-skyzero.vercel.app/)
     ```
 
 3. **API**:
-    API: https://deividfortuna.github.io/fipe/
-    Autor: https://github.com/deividfortuna/fipe
+    API: https://api-calculators.carbonext.com.br/v2/calculators/distance
+    Autor: [Carbonext](https://www.carbonext.com.br)
 
 ## Instruções para Rodar o Projeto
 
