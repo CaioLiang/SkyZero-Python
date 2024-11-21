@@ -9,14 +9,14 @@ from biblioteca import *
 def main():
     print("\nBem vindo à SkyZero!")
 
+    contador_registro = 1
     looping = True
     usuario = telaLogin()
     
     while looping:    
         
         if usuario != False:
-            print("\nMENU PRINCIPAL!")
-            print("\nDESENVOLVIMENTO!")
+            contador_registro = telaPrincipal(usuario, contador_registro)
 
         looping = opcaoSaida()
     

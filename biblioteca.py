@@ -1,10 +1,7 @@
 from conexaoBD import *  
 import os
 import re
-
-#VALIDAÇÃO DE ENTRADA
-
-#<login>
+from datetime import datetime
 
 def validaNomeEmpresa(nome):
     while True:
@@ -79,6 +76,92 @@ def entradaCnpj(cnpj):
         print("\nCNPJ inválido. Por favor, insira um CNPJ com 14 dígitos.")
         cnpj = input("\nPor favor, insira o CNPJ da empresa: ")
         
+def validaDistancia(distancia):
+    while True:
+        if not distancia.strip():
+            print("Erro: A distância não pode estar vazia.")
+        
+        try:
+            distancia_float = float(distancia)
+            if distancia_float > 0:
+                return distancia_float
+            print("Erro: Distância inválida! Digite um valor acima de 0.")
+        except ValueError:
+            print("Erro: A distância deve ser um número (float).")
+        
+        distancia = input("Digite a distância em KM: ")
+
+def validaAviao(tipo_aviao):
+    """
+    Valida se a entrada 'tipo_aviao' é 1 ou 2.
+    
+    Retorna o valor de 'tipo_aviao' se for válido,
+    caso contrário, continua pedindo uma entrada válida.
+    """
+    while tipo_aviao not in ['1', '2']:
+        print("Opção inválida. Por favor, insira 1 para Avião de carga ou 2 para Avião de passageiros.")
+        tipo_aviao = input("Digite uma das opções: ")
+
+    if tipo_aviao == '1':
+        return "CargoAirplane"
+    
+    return "PassengerAirplane"
+
+def validaOpcao(opcao):
+    """
+    Valida se a entrada 'opcao' é 1 ou 2.
+    
+    Retorna o valor de 'opcao' se for válida,
+    caso contrário, continua pedindo uma entrada válida.
+    """
+    while opcao not in ['1', '2']:
+        print("Opção inválida. Por favor, insira 1 para Cálculo de CO₂ ou 2 para Sair.")
+        opcao = input("Digite uma das opções: ")
+
+    return opcao
+
+def validaQuantidadePassageiros(quantidade):
+    """
+    Valida se a entrada 'quantidade' é um número (int),
+    maior que zero e não excede 1000 passageiros.
+    
+    Retorna True se a validação for bem-sucedida, caso contrário, retorna False.
+    """
+    while True:
+        try:
+            quantidade = int(quantidade)
+            
+            if quantidade > 0 and quantidade <= 1000:
+                return quantidade
+            else:
+                print("Erro: A quantidade deve ser maior que zero e menor ou igual a 1000.")
+        except ValueError:
+            print("Erro: A quantidade deve ser um número.")
+        
+        quantidade = input("Digite a quantidade de passageiros: ")
+
+def validaPesoAviao(quantidade):
+    """
+    Valida se a entrada 'quantidade' não é nula, é um número (float),
+    diferente de zero e positivo.
+    
+    Retorna o valor convertido para float se a validação for bem-sucedida,
+    caso contrário, continua pedindo uma entrada válida.
+    """
+    while True:
+        try:
+            if not quantidade.strip():
+                raise ValueError("O peso não pode estar vazio.")
+            quantidade_float = float(quantidade)
+            if quantidade_float > 0:
+                return quantidade_float
+            else:
+                raise ValueError("O peso deve ser um número positivo e diferente de zero.")
+        except ValueError as e:
+            print(f"Erro: {e}")
+            quantidade = input("Digite o peso do avião em toneladas: ")
+
+
 #SISTEMA
 
 def opcaoSaida(): 
@@ -132,7 +215,102 @@ def telaLogin():
             case _:
                 print("Opção inválida. Por favor, escolha uma opção válida.")
 
+def telaPrincipal(usuario, contador_registro):
+    
+    while True:
+        print(
+                "\n===BEM VINDO AO SISTEMA DE CALCULO DE EMISSAO DE CO₂ POR VIAGEM AÉREA===\n"
+                "\n=== MENU PRINCIPAL ===\n"
+                "1 - Cálculo de CO₂\n"
+                "2 - Sair\n"
+            )
+        opcao_menu_principal = input("Digite uma das opções : ")
+        opcao_menu_principal = validaOpcao(opcao_menu_principal)
+        
+        if opcao_menu_principal == '1':
+            print("\n---TIPO DE AVIÃO---\n"
+                "1 - Avião de carga\n"
+                "2 - Avião de passageiros\n")
+            tipo_aviao = input("Digite uma das opções: ")
+            tipo_aviao = validaAviao(tipo_aviao)
+            
+            if tipo_aviao == "PassengerAirplane":
+                quantidade_tipo_aviao = input("\nDigite a quantidade de passageiros: ")
+                quantidade_tipo_aviao = validaQuantidadePassageiros(quantidade_tipo_aviao)
+            else:
+                quantidade_tipo_aviao = input("\nDigite o peso do avião em toneladas: ")
+                quantidade_tipo_aviao = validaPesoAviao(quantidade_tipo_aviao)
+            
+            print("\n---DISTÂNCIA DA VIAGEM---\n")
+            distancia = input("Digite a distância em KM: ")
+            distancia = validaDistancia(distancia)
+            
+            dict_calculo_carbono = postAPI(tipo_aviao, distancia)
+            emissao_viagem = dict_calculo_carbono['emission']
+            
+            emissao_total = emissao_viagem * quantidade_tipo_aviao
+            
+            relatorio_json = {
+            'cnpj' : usuario['cnpj'],
+            'type' : tipo_aviao,
+            'distancia' : distancia, 
+            'quantidadeTipoAviao' : quantidade_tipo_aviao,
+            'emissaoCalculada' :  emissao_viagem, 
+            'emissaoTotal' : emissao_total,
+            'dataRegistro' : f'{datetime.today().date()}'   
+            }
+
+            query_script = f"SELECT id_usuario FROM tb_usuario WHERE cnpj = {usuario['cnpj']}"
+            id_usuario_bruto = comandoConexaoBD(query_script)
+            
+            for id in id_usuario_bruto: 
+                id_usuario_login = id[0]
+            
+            print("\n-----------------CADASTRANDO REGISTRO NO BANCO DE DADOS-----------------")
+            query_script = f"INSERT INTO tb_registro (ID_USUARIO, TIPO_AVIAO, DISTANCIA, EMISSAOCALCULADA, DATA_REGISTRO) VALUES ({id_usuario_login},'{relatorio_json['type']}', {relatorio_json['distancia']}, {relatorio_json['emissaoTotal']}, TO_DATE('{relatorio_json['dataRegistro']}', 'YYYY-MM-DD'))"
+            comandoConexaoBD(query_script)
+
+            imprimirRelatorio(relatorio_json)
+
+            contador_registro = exportarJson(relatorio_json, contador_registro)
+            
+        return contador_registro
+    
 #<submenus>
+
+def postAPI(tipo_aviao, distancia):
+    import requests
+
+    while True:
+        url = 'https://api-calculators.carbonext.com.br/v2/calculators/distance'
+
+        headers = {
+            'Content-Type' : 'application/json'
+        }
+
+        try:
+            dados = {
+                "type": tipo_aviao,
+                "distance": distancia,
+                "currency": "BRL"
+            }
+
+            response = requests.post(url, headers=headers , json=dados)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Erro: {response.status_code}")
+        except Exception as e:
+            print(e)
+        
+        distancia = input("Digite a distância em KM: ")
+        distancia = validaDistancia()
+        print("------TIPO DE AVIÃO------\n"
+                "1 - Avião de carga\n"
+                "2 - Avião de passageiros")
+        tipo_aviao = input("Digite uma das opções: ")
+        tipo_aviao = validaAviao()
             
 def menuCadastro():
     
@@ -242,6 +420,52 @@ def realizarLogin():
         if decisao_cadastro == '1':
             return menuCadastro()
 
+def imprimirRelatorio(relatorio_json):
+    
+    if relatorio_json['type'] == 'PassengerAirplane':    
+        print("\n=== RELATÓRIO DE VIAGEM ===\n")
+        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
+        print(f"Tipo de Avião          : {relatorio_json['type']}")
+        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
+        print(f"Qtde de passageiro     : {relatorio_json['quantidadeTipoAviao']} de pessoa(s)")
+        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
+        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
+        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
+        print("\n=============================\n")
+    elif relatorio_json['type'] == 'CargoAirplane':
+        print("\n=== RELATÓRIO DE VIAGEM ===\n")
+        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
+        print(f"Tipo de Avião          : {relatorio_json['type']}")
+        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
+        print(f"Peso do Avião          : {relatorio_json['quantidadeTipoAviao']} t")
+        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
+        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
+        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
+        print("\n=============================\n")
+    
+def exportarJson(relatorio_json, contador_registro): 
+    
+    print("\nDeseja exportar relatório em JSON?\n" 
+      "1 = Sim\n"  
+      "2 = Não\n")
+
+    exportar = input("Digite uma das opções: ")
+    
+    while exportar not in ['1', '2']:
+        print("Opção inválida. \nPor favor, digite 1 = SIM ou 2 = NÃO")
+        exportar = input("Digite uma das opções: ")
+    
+    if exportar == '1':
+        import json
+        
+        with open (f'relatorio{contador_registro}.json', 'w', encoding='utf-8') as arquivo:
+            json.dump(relatorio_json, arquivo, ensure_ascii= False, indent=4)
+        
+        contador_registro = contador_registro + 1
+        print("Relatório exportado em JSON!\n")
+    
+    return contador_registro
+    
 #<conexão com banco de dados>
 def comandoConexaoBD(query_script):
     while True:
