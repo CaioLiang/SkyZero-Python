@@ -473,7 +473,13 @@ def atualizarRegistro(registro_escolhido):
         comandoConexaoBD(query_script)        
         
         print("\n-----------------ATUALIZADO-----------------")
-        
+
+def deletarRegistro(registro_escolhido):
+    print("\n-----------------DELETANDO REGISTRO NO BANCO DE DADOS-----------------")
+    query_script = f"DELETE FROM tb_registro WHERE id_registro = {registro_escolhido}"
+    comandoConexaoBD(query_script) 
+    print("-----------------EXCLUIDO-----------------")
+    
 def opcaoSaida(): 
     while True:
         resposta = input(
@@ -607,8 +613,7 @@ def telaPrincipal(usuario, contador_registro):
                     atualizarRegistro(registro_escolhido)
                     
                 elif alterar_registro == '2':
-                    print()
-                    # deletarRegistro(registro_escolhido)
+                    deletarRegistro(registro_escolhido)
                     
             else:
                 print("\nSEM REGISTROS CADASTRADOS NO SEU USUÁRIO\n")
