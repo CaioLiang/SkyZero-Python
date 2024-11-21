@@ -66,7 +66,7 @@ def tratarDadosBrutos(dados_brutos):
         lista_tratada.append(item[0]) 
     
     return lista_tratada        
-            
+
 def entradaCnpj(cnpj):
     pattern = r'^\d{14}$'
     while True:
@@ -109,13 +109,13 @@ def validaAviao(tipo_aviao):
 
 def validaOpcao(opcao):
     """
-    Valida se a entrada 'opcao' é 1 ou 2.
+    Valida se a entrada 'opcao' é 1, 2 ou 3.
     
     Retorna o valor de 'opcao' se for válida,
     caso contrário, continua pedindo uma entrada válida.
     """
-    while opcao not in ['1', '2']:
-        print("Opção inválida. Por favor, insira 1 para Cálculo de CO₂ ou 2 para Sair.")
+    while opcao not in ['1', '2', '3']:
+        print("Opção inválida. Por favor, insira 1 para Cálculo de CO₂, 2 para Alterar registros ou 3 para Sair.")
         opcao = input("Digite uma das opções: ")
 
     return opcao
@@ -161,122 +161,82 @@ def validaPesoAviao(quantidade):
             print(f"Erro: {e}")
             quantidade = input("Digite o peso do avião em toneladas: ")
 
-
-#SISTEMA
-
-def opcaoSaida(): 
-    while True:
-        resposta = input(
-            "\n=== OPÇÃO DE SAIR ===\n"
-            "Quer sair do programa?\n"
-            "1 - Sim\n"
-            "2 - Não\n"
-            "\nDigite o número da sua escolha: "
-        )
-        
-        try:
-            resposta = int(resposta)
-            if resposta in [1, 2]:
-                break
-            else:
-                print("Por favor, insira 1 para SIM ou 2 para NÃO.")
-        except ValueError:
-            print("Por favor, tipo de entrada errada, digite um valor inteiro!.")
-
-    if resposta == 2: 
-        return True
-    else:
-        return False
+def validaAlterarRegistro(alterar_registro):
+    """
+    Valida se a entrada 'alterar_registro' é 1 ou 2.
     
-def telaLogin():
-    while True:
-        print(
-                "\n=== MENU LOGIN ===\n"
-                "1 - Login\n"
-                "2 - Cadastrar usuário\n"
-                "3 - Sair"
-            )
-        
-        escolha = input("\nDigite o número da sua escolha: ").strip()
-            
-        try:
-            escolha = int(escolha)
-        except ValueError:
-            print("Por favor, insira um número válido.")
-            continue
-        
-        match escolha:
-            case 1:
-                return realizarLogin()
-            case 2:
-                return menuCadastro()
-            case 3:
-                return False
-            case _:
-                print("Opção inválida. Por favor, escolha uma opção válida.")
+    Retorna o valor de 'alterar_registro' se for válido,
+    caso contrário, continua pedindo uma entrada válida.
+    """
+    while alterar_registro not in ['1', '2']:
+        print("Opção inválida. Por favor, insira 1 para Atualizar registro ou 2 para Deletar registro.")
+        alterar_registro = input("Digite uma das opções: ")
 
-def telaPrincipal(usuario, contador_registro):
+    return alterar_registro
+        
+def retornaIdUsuario(usuario):
+    query_script = f"SELECT id_usuario FROM tb_usuario WHERE cnpj = {usuario['cnpj']}"
+    id_usuario_bruto = comandoConexaoBD(query_script)
     
-    while True:
-        print(
-                "\n===BEM VINDO AO SISTEMA DE CALCULO DE EMISSAO DE CO₂ POR VIAGEM AÉREA===\n"
-                "\n=== MENU PRINCIPAL ===\n"
-                "1 - Cálculo de CO₂\n"
-                "2 - Sair\n"
-            )
-        opcao_menu_principal = input("Digite uma das opções : ")
-        opcao_menu_principal = validaOpcao(opcao_menu_principal)
-        
-        if opcao_menu_principal == '1':
-            print("\n---TIPO DE AVIÃO---\n"
-                "1 - Avião de carga\n"
-                "2 - Avião de passageiros\n")
-            tipo_aviao = input("Digite uma das opções: ")
-            tipo_aviao = validaAviao(tipo_aviao)
-            
-            if tipo_aviao == "PassengerAirplane":
-                quantidade_tipo_aviao = input("\nDigite a quantidade de passageiros: ")
-                quantidade_tipo_aviao = validaQuantidadePassageiros(quantidade_tipo_aviao)
-            else:
-                quantidade_tipo_aviao = input("\nDigite o peso do avião em toneladas: ")
-                quantidade_tipo_aviao = validaPesoAviao(quantidade_tipo_aviao)
-            
-            print("\n---DISTÂNCIA DA VIAGEM---\n")
-            distancia = input("Digite a distância em KM: ")
-            distancia = validaDistancia(distancia)
-            
-            dict_calculo_carbono = postAPI(tipo_aviao, distancia)
-            emissao_viagem = dict_calculo_carbono['emission']
-            
-            emissao_total = emissao_viagem * quantidade_tipo_aviao
-            
-            relatorio_json = {
-            'cnpj' : usuario['cnpj'],
-            'type' : tipo_aviao,
-            'distancia' : distancia, 
-            'quantidadeTipoAviao' : quantidade_tipo_aviao,
-            'emissaoCalculada' :  emissao_viagem, 
-            'emissaoTotal' : emissao_total,
-            'dataRegistro' : f'{datetime.today().date()}'   
-            }
+    for id in id_usuario_bruto: 
+        return id[0]
 
-            query_script = f"SELECT id_usuario FROM tb_usuario WHERE cnpj = {usuario['cnpj']}"
-            id_usuario_bruto = comandoConexaoBD(query_script)
-            
-            for id in id_usuario_bruto: 
-                id_usuario_login = id[0]
-            
-            print("\n-----------------CADASTRANDO REGISTRO NO BANCO DE DADOS-----------------")
-            query_script = f"INSERT INTO tb_registro (ID_USUARIO, TIPO_AVIAO, DISTANCIA, EMISSAOCALCULADA, DATA_REGISTRO) VALUES ({id_usuario_login},'{relatorio_json['type']}', {relatorio_json['distancia']}, {relatorio_json['emissaoTotal']}, TO_DATE('{relatorio_json['dataRegistro']}', 'YYYY-MM-DD'))"
-            comandoConexaoBD(query_script)
+def imprimirListaRelatorio(relatorio_lista):
+    from datetime import datetime
 
-            imprimirRelatorio(relatorio_json)
+    print("\n=== RELATÓRIO DE REGISTROS DE AVIÃO ===\n")
+    print(f"{'ID':<5}{'FK':<5}{'Tipo de Avião':<20}{'Distância':<12}{'EmissãoCalculada':<25}{'Data':<10}")
+    print("-" * 110)
+    for registro in relatorio_lista:
+        id_registro, id_usuario, tipo_aviao, distancia, emissao_calculada, data_registro = registro
+        print(f"{id_registro:<5}{id_usuario:<5}{tipo_aviao:<20}{distancia:<12}{emissao_calculada:<25}{data_registro.strftime('%Y-%m-%d'):<10}")
+    print("\n" + "=" * 110 + "\n")
 
-            contador_registro = exportarJson(relatorio_json, contador_registro)
-            
-        return contador_registro
+def imprimirRelatorio(relatorio_json):
     
-#<submenus>
+    if relatorio_json['type'] == 'PassengerAirplane':    
+        print("\n=== RELATÓRIO DE VIAGEM ===\n")
+        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
+        print(f"Tipo de Avião          : {relatorio_json['type']}")
+        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
+        print(f"Qtde de passageiro     : {relatorio_json['quantidadeTipoAviao']} de pessoa(s)")
+        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
+        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
+        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
+        print("\n=============================\n")
+    elif relatorio_json['type'] == 'CargoAirplane':
+        print("\n=== RELATÓRIO DE VIAGEM ===\n")
+        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
+        print(f"Tipo de Avião          : {relatorio_json['type']}")
+        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
+        print(f"Peso do Avião          : {relatorio_json['quantidadeTipoAviao']} t")
+        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
+        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
+        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
+        print("\n=============================\n")
+    
+def exportarJson(relatorio_json, contador_registro): 
+    
+    print("\nDeseja exportar relatório em JSON?\n" 
+      "1 = Sim\n"  
+      "2 = Não\n")
+
+    exportar = input("Digite uma das opções: ")
+    
+    while exportar not in ['1', '2']:
+        print("Opção inválida. \nPor favor, digite 1 = SIM ou 2 = NÃO")
+        exportar = input("Digite uma das opções: ")
+    
+    if exportar == '1':
+        import json
+        
+        with open (f'relatorio{contador_registro}.json', 'w', encoding='utf-8') as arquivo:
+            json.dump(relatorio_json, arquivo, ensure_ascii= False, indent=4)
+        
+        contador_registro = contador_registro + 1
+        print("Relatório exportado em JSON!\n")
+    
+    return contador_registro
 
 def postAPI(tipo_aviao, distancia):
     import requests
@@ -312,6 +272,43 @@ def postAPI(tipo_aviao, distancia):
         tipo_aviao = input("Digite uma das opções: ")
         tipo_aviao = validaAviao()
             
+def tipoAviao():
+    
+    print("\n---TIPO DE AVIÃO---\n"
+                "1 - Avião de carga\n"
+                "2 - Avião de passageiros\n")
+    tipo_aviao = input("Digite uma das opções: ")
+    tipo_aviao = validaAviao(tipo_aviao)
+    
+    return tipo_aviao
+
+def quantidadeTipoAviao(tipo_aviao):
+    
+    if tipo_aviao == "PassengerAirplane":
+        quantidade_tipo_aviao = input("\nDigite a quantidade de passageiros: ")
+        quantidade_tipo_aviao = validaQuantidadePassageiros(quantidade_tipo_aviao)
+    else:
+        quantidade_tipo_aviao = input("\nDigite o peso do avião em toneladas: ")
+        quantidade_tipo_aviao = validaPesoAviao(quantidade_tipo_aviao)
+    
+    return quantidade_tipo_aviao
+
+def calculoViagemAPI(tipo_aviao, distancia):
+
+    dict_calculo_carbono = postAPI(tipo_aviao, distancia)
+    emissao_viagem = dict_calculo_carbono['emission']
+
+    return emissao_viagem
+
+def entradaDistancia():
+    print("\n---DISTÂNCIA DA VIAGEM---\n")
+    distancia = input("Digite a distância em KM: ")
+    distancia = validaDistancia(distancia)
+    
+    return distancia
+
+#<submenus>
+
 def menuCadastro():
     
     print("\n=== MENU CADASTRO ===")
@@ -419,52 +416,205 @@ def realizarLogin():
         
         if decisao_cadastro == '1':
             return menuCadastro()
+    
+def atualizarRegistro(registro_escolhido):
+    
+    print("\n---MENU ATRIBUTOS DO REGISTRO---\n"
+                "1 - Tipo de avião\n"
+                "2 - Distância\n"
+                )
+    
+    alteracao_registro = input("Digite uma das opções: ")
 
-def imprimirRelatorio(relatorio_json):
-    
-    if relatorio_json['type'] == 'PassengerAirplane':    
-        print("\n=== RELATÓRIO DE VIAGEM ===\n")
-        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
-        print(f"Tipo de Avião          : {relatorio_json['type']}")
-        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
-        print(f"Qtde de passageiro     : {relatorio_json['quantidadeTipoAviao']} de pessoa(s)")
-        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
-        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
-        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
-        print("\n=============================\n")
-    elif relatorio_json['type'] == 'CargoAirplane':
-        print("\n=== RELATÓRIO DE VIAGEM ===\n")
-        print(f"CNPJ do Usuário        : {relatorio_json['cnpj']}")
-        print(f"Tipo de Avião          : {relatorio_json['type']}")
-        print(f"Distância Percorrida   : {relatorio_json['distancia']} km")
-        print(f"Peso do Avião          : {relatorio_json['quantidadeTipoAviao']} t")
-        print(f"Emissão Calculada      : {relatorio_json['emissaoCalculada']} t de CO₂")
-        print(f"Emissão Total          : {relatorio_json['emissaoTotal']} t de CO₂")
-        print(f"Data do Registro       : {relatorio_json['dataRegistro']}")
-        print("\n=============================\n")
-    
-def exportarJson(relatorio_json, contador_registro): 
-    
-    print("\nDeseja exportar relatório em JSON?\n" 
-      "1 = Sim\n"  
-      "2 = Não\n")
+    while alteracao_registro not in ['1', '2']:
+        print("Opção inválida. Por favor, insira 1 para Tipo de avião e 2 para Distância")
+        alteracao_registro = input("Digite uma das opções: ")
 
-    exportar = input("Digite uma das opções: ")
-    
-    while exportar not in ['1', '2']:
-        print("Opção inválida. \nPor favor, digite 1 = SIM ou 2 = NÃO")
-        exportar = input("Digite uma das opções: ")
-    
-    if exportar == '1':
-        import json
+    if alteracao_registro == '1': 
         
-        with open (f'relatorio{contador_registro}.json', 'w', encoding='utf-8') as arquivo:
-            json.dump(relatorio_json, arquivo, ensure_ascii= False, indent=4)
+        print("\nSelecione o tipo do avião atualizado: ")
+        tipo_aviao = tipoAviao()
         
-        contador_registro = contador_registro + 1
-        print("Relatório exportado em JSON!\n")
+        print("\n-----------------ALTERANDO TIPO_AVIAO NO BANCO DE DADOS-----------------")
+        query_script = f"UPDATE tb_registro SET TIPO_AVIAO  = '{tipo_aviao}' WHERE id_registro = {registro_escolhido}"
+        comandoConexaoBD(query_script)
+        
+        query_script = f"SELECT distancia FROM tb_registro WHERE id_registro = {registro_escolhido}"
+        distancia_bruto = comandoConexaoBD(query_script)
+        
+        distancia = distancia_bruto[0][0]
+        
+        emissao_viagem = calculoViagemAPI(tipo_aviao, distancia)
+        
+        print("\n-----------------ATUALIZANDO EMISSAO DE CARBONO NO BANCO DE DADOS-----------------")
+        query_script = f"UPDATE tb_registro SET emissaocalculada  = {emissao_viagem} WHERE id_registro = {registro_escolhido}"
+        comandoConexaoBD(query_script)        
+        
+        print("\n-----------------ATUALIZADO-----------------")
+        
+    elif alteracao_registro == '2':
+        
+        print("\nAtualizando distância: ")
+        distancia = entradaDistancia()
+        
+        print("\n-----------------ATUALIZANDO DISTANCIA NO BANCO DE DADOS-----------------")
+        query_script = f"UPDATE tb_registro SET distancia  = {distancia} WHERE id_registro = {registro_escolhido}"
+        comandoConexaoBD(query_script)
+        
+        query_script = f"SELECT tipo_aviao FROM tb_registro WHERE id_registro = {registro_escolhido}"
+        tipo_aviao_bruto = comandoConexaoBD(query_script)
+        
+        tipo_aviao = tipo_aviao_bruto[0][0]
+
+        emissao_viagem = calculoViagemAPI(tipo_aviao, distancia)
+        
+        print("\n-----------------ATUALIZANDO EMISSAO DE CARBONO NO BANCO DE DADOS-----------------")
+        query_script = f"UPDATE tb_registro SET emissaocalculada  = {emissao_viagem} WHERE id_registro = {registro_escolhido}"
+        comandoConexaoBD(query_script)        
+        
+        print("\n-----------------ATUALIZADO-----------------")
+        
+def opcaoSaida(): 
+    while True:
+        resposta = input(
+            "\n=== OPÇÃO DE SAIR ===\n"
+            "Quer sair do programa?\n"
+            "1 - Sim\n"
+            "2 - Não\n"
+            "\nDigite o número da sua escolha: "
+        )
+        
+        try:
+            resposta = int(resposta)
+            if resposta in [1, 2]:
+                break
+            else:
+                print("Por favor, insira 1 para SIM ou 2 para NÃO.")
+        except ValueError:
+            print("Por favor, tipo de entrada errada, digite um valor inteiro!.")
+
+    if resposta == 2: 
+        return True
+    else:
+        return False
+
+#SISTEMA
     
-    return contador_registro
+def telaLogin():
+    while True:
+        print(
+                "\n=== MENU LOGIN ===\n"
+                "1 - Login\n"
+                "2 - Cadastrar usuário\n"
+                "3 - Sair"
+            )
+        
+        escolha = input("\nDigite o número da sua escolha: ").strip()
+            
+        try:
+            escolha = int(escolha)
+        except ValueError:
+            print("Por favor, insira um número válido.")
+            continue
+        
+        match escolha:
+            case 1:
+                return realizarLogin()
+            case 2:
+                return menuCadastro()
+            case 3:
+                return False
+            case _:
+                print("Opção inválida. Por favor, escolha uma opção válida.")
+
+def telaPrincipal(usuario, contador_registro):
+    
+    while True:
+        print(
+                "\n===BEM VINDO AO SISTEMA DE CÁLCULO DE EMISSAO DE CO₂ POR VIAGEM AÉREA===\n"
+                "\n=== MENU PRINCIPAL ===\n"
+                "1 - Cálculo de CO₂\n"
+                "2 - Alterar registros\n"
+                "3 - Sair\n"
+            )
+        opcao_menu_principal = input("Digite uma das opções : ")
+        opcao_menu_principal = validaOpcao(opcao_menu_principal)
+        
+        if opcao_menu_principal == '1':
+            
+            tipo_aviao = tipoAviao()
+            
+            quantidade_tipo_aviao = quantidadeTipoAviao(tipo_aviao)
+            
+            distancia = entradaDistancia() 
+            
+            emissao_viagem = calculoViagemAPI(tipo_aviao, distancia)
+            
+            emissao_total = emissao_viagem * quantidade_tipo_aviao
+            
+            relatorio_json = {
+            'cnpj' : usuario['cnpj'],
+            'type' : tipo_aviao,
+            'distancia' : distancia, 
+            'quantidadeTipoAviao' : quantidade_tipo_aviao,
+            'emissaoCalculada' :  emissao_viagem, 
+            'emissaoTotal' : emissao_total,
+            'dataRegistro' : f'{datetime.today().date()}'   
+            }
+
+            id_usuario_login = retornaIdUsuario(usuario)
+            
+            print("\n-----------------CADASTRANDO REGISTRO NO BANCO DE DADOS-----------------")
+            query_script = f"INSERT INTO tb_registro (ID_USUARIO, TIPO_AVIAO, DISTANCIA, EMISSAOCALCULADA, DATA_REGISTRO) VALUES ({id_usuario_login},'{relatorio_json['type']}', {relatorio_json['distancia']}, {relatorio_json['emissaoCalculada']}, TO_DATE('{relatorio_json['dataRegistro']}', 'YYYY-MM-DD'))"
+            comandoConexaoBD(query_script)
+
+            imprimirRelatorio(relatorio_json)
+
+            contador_registro = exportarJson(relatorio_json, contador_registro)
+        
+        elif opcao_menu_principal == '2':
+            
+            id_usuario_login = retornaIdUsuario(usuario)
+
+            print("\n-----------------CONSULTANDO REGISTROS NO BANCO DE DADOS-----------------")
+            query_script = f"SELECT * FROM tb_registro WHERE id_usuario = {id_usuario_login}"
+            total_registros = comandoConexaoBD(query_script)
+            
+            if len(total_registros) != 0:
+                  
+                print("\n---ALTERAR REGISTROS---\n"
+                    "1 - Atualizar registro\n"
+                    "2 - Deletar registro\n")
+                alterar_registro = input("Digite uma das opções: ")
+                alterar_registro = validaAlterarRegistro(alterar_registro)
+                
+                imprimirListaRelatorio(total_registros)
+                
+                registro_escolhido = input("Digite o id_registro a ser alterado: ")
+                
+                lista_id_registro = []
+                
+                for registro in total_registros:
+                    lista_id_registro.append(str(registro[0]))
+                    
+                while True:
+                    if registro_escolhido in lista_id_registro:
+                        break
+                    print("\nOpção inválida!\n")
+                    registro_escolhido = input("Digite o id do registro a ser alterado: ")
+                        
+                if alterar_registro == '1':
+                    atualizarRegistro(registro_escolhido)
+                    
+                elif alterar_registro == '2':
+                    print()
+                    # deletarRegistro(registro_escolhido)
+                    
+            else:
+                print("\nSEM REGISTROS CADASTRADOS NO SEU USUÁRIO\n")
+                return contador_registro       
+
+        return contador_registro
     
 #<conexão com banco de dados>
 def comandoConexaoBD(query_script):
@@ -480,15 +630,8 @@ def comandoConexaoBD(query_script):
             if query_script.strip().upper().startswith('SELECT'):
                 resultados = cursor.fetchall()
                 
-                # if resultados:
-                #     print("\nConsulta retornou resultados.")
-                # else:
-                #     print("\nConsulta não retornou resultados.")
-                
-                # print("Comando executado com sucesso!\n")
                 return resultados
             
-            # print("Comando executado com sucesso!\n")
             break
         except Exception as e: 
             print("\nERRO DE CREDENCIAIS\n")
